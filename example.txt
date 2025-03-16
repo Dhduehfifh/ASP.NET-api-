@@ -1,0 +1,24 @@
+class Program
+{
+    public Api_session api { get; protected set;}
+
+    api =>  //这里可能有别的能够调用的函数或者什么别的，根据具体情况而定
+    {   
+        const AI1 = new ExternalGateway(url); //这里的url我就直接代替了,而且这个const指的是js里面那种全局的const
+        api.external.add(AI1); //这里指代的调用方法是外部网关的调用方法
+        api.router("home");
+        home => //具体调用方法是情况而定
+        {
+            .....
+        };
+        api.router("detail");
+        detail => //具体调用方法是情况而定
+        {
+            .....
+        }
+
+    }
+
+    api.Test();
+    //如果不加这个test就不会进test逻辑，会正常向前端输出东西
+}
