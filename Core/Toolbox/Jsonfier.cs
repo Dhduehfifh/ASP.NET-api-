@@ -87,6 +87,22 @@ namespace Toolbox
             return chunks;
         }
 
+         /// <summary>
+        /// 将分块对象转为 JSON 方便发送
+        /// </summary>
+        public string ChunkToJson(ProtocolChunk chunk)
+        {
+            return JsonSerializer.Serialize(chunk);
+        }
+
+        /// <summary>
+        /// 从 JSON 转回分块对象
+        /// </summary>
+        public ProtocolChunk ChunkFromJson(string json)
+        {
+            return JsonSerializer.Deserialize<ProtocolChunk>(json);
+        }
+
     }
 
     /// <summery>
