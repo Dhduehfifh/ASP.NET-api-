@@ -12,13 +12,15 @@ namespace Database
         private Dictionary<string, OrmMapping> _tableMappings;
         private DBConfig _config;
 
-        public DatabaseCore(string dbName, Dictionary<string, OrmMapping> tableMappings)
+        // 现在 DBConfig 作为参数传递
+        public DatabaseCore(string dbName, Dictionary<string, OrmMapping> tableMappings, DBConfig config)
         {
             _dbName = dbName;
             _tableMappings = tableMappings;
+            _config = config;
         }
 
-        public void SetConfig(DBConfig config) => _config = config;
+        public DBConfig GetConfig() => _config;
 
         public OrmMapping GetOrmMapping(string logicalName)
         {
@@ -48,7 +50,5 @@ namespace Database
                 SqlLizerPool.Return(sqlLizer);
             }
         }
-
-        public DBConfig GetConfig() => _config;
     }
 }

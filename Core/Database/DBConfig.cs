@@ -1,34 +1,34 @@
-using Microsoft.Extensions.ObjectPool;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace Database
 {
     public class DBConfig
     {
-        public string DatabaseType { get; set; }
-        public string ConnectionString { get; set; }
+        // 适配器（必须手动传入，避免硬编码）
+        public ISqlAdapter SqlAdapter { get; set; }
 
-        // 预留扩展：动态适配不同 SQL 构建器
-        public ISqlAdapter GetSqlAdapter()
+        // 默认参数（可调整）
+        public int PoolSize { get; set; } = 200;  // 默认连接池大小
+        public int Timeout { get; set; } = 30;    // 默认超时 30 秒
+        public bool AutoReconnect { get; set; } = true;  // 默认自动重连
+        public string Region { get; set; } = "local";  // 服务器区域
+
+        // 额外自定义字段
+        public Dictionary<string, object> Extensions { get; set; } = new();
+
+        // 默认构造
+        public DBConfig() { }
+
+        // 允许直接传入适配器
+        public DBConfig(ISqlAdapter adapter)
         {
-            // 这里简单示例，实际按 DatabaseType 返回不同适配器
-            return new MySqlAdapter(ConnectionString);
+            SqlAdapter = adapter;
         }
-        
+
+        // 统一适配器获取
+        public ISqlAdapter GetSqlAdapter() => SqlAdapter;
     }
 
-    public class ISqlAdapter
+    public interface ISqlAdapter
     {
-        //暂且作为空实现
-    }
-    public class MySqlAdapter
-    {
-        public string _connectionString { get; private set; }
-        public MySqlAdapter(string ConnectionString)
-        {
-            _connectionString = ConnectionString;
-        }
+        void Execute(string sql, Dictionary<string, object> parameters);
     }
 }
