@@ -26,6 +26,18 @@ namespace Toolbox
         /// </summery>
         public bool IsComplete => _chunks.Count > 0 && _chunks.Count == _chunks[0].TotalChunks;
 
+        /// <summery>
+        /// 分块重组为完整数据
+        /// </summery>
+        public byte[] Reassemble()
+        {
+            _chunks.Sort((a, b) => a.Index.CompareTo(b.Index)); //按顺序重排
+            List<byte> allData = new List<byte>();
+            foreach (var chunk in _chunks)
+                allData.AddRange(chunk.Data);
+            return allData.ToArray(); //返回合成数据 
+        }
+
     }
 
     /// <summery>
