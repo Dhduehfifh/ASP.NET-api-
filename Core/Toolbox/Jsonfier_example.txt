@@ -1,0 +1,23 @@
+// 序列化 + 分块
+var jsonTool = new Jsonfier();
+var chunks = jsonTool.Chunk(new { Id = 1, Name = "测试" }, 1024);
+
+// 分块转 JSON 准备发送
+foreach (var chunk in chunks)
+{
+    string chunkJson = jsonTool.ChunkToJson(chunk);
+    // 发送 chunkJson
+}
+
+// 接收端
+var receiver = new Jsonfier();
+// 假设接收分块
+receiver.AddChunk(jsonTool.ChunkFromJson(receivedJson1));
+receiver.AddChunk(jsonTool.ChunkFromJson(receivedJson2));
+// 检查是否收齐
+if (receiver.IsComplete)
+{
+    byte[] allData = receiver.Reassemble();
+    var obj = jsonTool.Deserialize<Dictionary<string, object>>(allData);
+    Console.WriteLine(obj["Name"]);  // 输出: 测试
+}
