@@ -21,6 +21,11 @@ namespace Toolbox
             _chunks.Add(chunk);
         }
 
+        /// <summery>
+        /// 判断分块是否接收完成
+        /// </summery>
+        public bool IsComplete => _chunks.Count > 0 && _chunks.Count == _chunks[0].TotalChunks;
+
     }
 
     /// <summery>
