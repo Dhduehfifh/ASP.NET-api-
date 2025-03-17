@@ -51,6 +51,15 @@ namespace Toolbox
             return Encoding.UTF8.GetBytes(json);
         }
 
+        /// <summary>
+        /// 将 JSON 字节数组反序列化为对象
+        /// </summary>
+        public T Deserialize<T>(byte[] data)
+        {
+            var json = Encoding.UTF8.GetString(data);
+            return JsonSerializer.Deserialize<T>(json);
+        }
+
     }
 
     /// <summery>
