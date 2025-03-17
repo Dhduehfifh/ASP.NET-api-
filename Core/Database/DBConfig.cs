@@ -1,4 +1,7 @@
-
+using Microsoft.Extensions.ObjectPool;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Database
 {
@@ -6,18 +9,26 @@ namespace Database
     {
         public string DatabaseType { get; set; }
         public string ConnectionString { get; set; }
-        
-        // 给后面留着orm映射
-        public Dictionary<string, string> TableMappings { get; set; }
 
-        public string ParamStyle { get; set; } = "@";
-        public bool Transactional { get; set; } = true;
-
-        //获取适配器（暂时为空，后期再尝试实现）
+        // 预留扩展：动态适配不同 SQL 构建器
         public ISqlAdapter GetSqlAdapter()
         {
-            //按照实际情况返回适配器，暂时留空
-            throw new NotImplementedException();
+            // 这里简单示例，实际按 DatabaseType 返回不同适配器
+            return new MySqlAdapter(ConnectionString);
+        }
+        
+    }
+
+    public class ISqlAdapter
+    {
+        //暂且作为空实现
+    }
+    public class MySqlAdapter
+    {
+        public string _connectionString { get; private set; }
+        public MySqlAdapter(string ConnectionString)
+        {
+            _connectionString = ConnectionString;
         }
     }
 }
