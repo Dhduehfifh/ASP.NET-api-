@@ -38,6 +38,19 @@ namespace Toolbox
             return allData.ToArray(); //返回合成数据 
         }
 
+        /// <summary>
+        /// 将对象序列化为 JSON 字节数组
+        /// </summary>
+        public byte[] Serialize(object obj)
+        {
+            var json = JsonSerializer.Serialize(obj, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+            });
+            return Encoding.UTF8.GetBytes(json);
+        }
+
     }
 
     /// <summery>
