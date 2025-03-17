@@ -3,33 +3,33 @@ using System;
 namespace Database
 {
     /// <summary>
-    /// ORM 映射对象，支持静态表名和动态分表解析
+    /// ORM 表映射，支持基础表和动态分表逻辑
     /// </summary>
     public class OrmMapping
     {
         /// <summary>
-        /// 逻辑名（如 "User"）
+        /// 逻辑名称（如 "User"）
         /// </summary>
         public string LogicalName { get; set; }
 
         /// <summary>
-        /// 静态表名（如 "users"，如果不分表直接用这个）
+        /// 默认表名（如 "users"）
         /// </summary>
         public string PhysicalTable { get; set; }
 
         /// <summary>
-        /// 分表解析器（如需要按日期/用户ID分表）
+        /// 分表解析器（动态计算表名的函数，可选）
         /// </summary>
         public Func<object, string> TableResolver { get; set; }
 
         /// <summary>
-        /// 解析最终表名（如果设置了动态分表优先使用）
+        /// 解析最终表名（优先动态分表解析器，未设置则返回默认表名）
         /// </summary>
         public string ResolveTable(object contextData = null)
         {
-            if (TableResolver != null && contextData != null)
-                return TableResolver(contextData);
-            return PhysicalTable;
+            return TableResolver != null && contextData != null
+                ? TableResolver(contextData)
+                : PhysicalTable;
         }
     }
 }
