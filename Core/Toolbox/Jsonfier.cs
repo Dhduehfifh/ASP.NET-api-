@@ -12,7 +12,15 @@ namespace Toolbox
     {
         //临时分块存储
         private List<ProtocolChunk> _chunks = new List<ProtocolChunk>();
-        
+
+        /// <summery>
+        /// 添加分块（用于接受场景）
+        /// </summery>
+        public void AddChunk(ProtocolChunk chunk)
+        {
+            _chunks.Add(chunk);
+        }
+
     }
 
     /// <summery>
