@@ -60,6 +60,33 @@ namespace Toolbox
             return JsonSerializer.Deserialize<T>(json);
         }
 
+        /// <summary>
+        /// 将对象序列化后按块大小分块
+        /// </summary>
+        public List<ProtocolChunk> Chunk(object obj, int chunkSize)
+        {
+            var data = Serialize(obj); // 序列化成字节
+            List<ProtocolChunk> chunks = new List<ProtocolChunk>();
+            int totalChunks = (int)Math.Ceiling((double)data.Length / chunkSize); // 总块数
+
+            for (int i = 0; i < totalChunks; i++)
+            {
+                int offset = i * chunkSize;
+                int size = Math.Min(chunkSize, data.Length - offset);
+                byte[] chunkData = new byte[size];
+                Array.Copy(data, offset, chunkData, 0, size);
+
+                chunks.Add(new ProtocolChunk
+                {
+                    Index = i,
+                    TotalChunks = totalChunks,
+                    Data = chunkData
+                });
+            }
+
+            return chunks;
+        }
+
     }
 
     /// <summery>
