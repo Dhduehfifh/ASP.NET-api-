@@ -21,6 +21,19 @@
           "Microsoft.AspNetCore.App"
         ]
       },
+      "Microsoft.Extensions.ObjectPool/9.0.3": {
+        "type": "package",
+        "compile": {
+          "lib/net9.0/Microsoft.Extensions.ObjectPool.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net9.0/Microsoft.Extensions.ObjectPool.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "Microsoft.OpenApi/1.6.17": {
         "type": "package",
         "compile": {
@@ -128,6 +141,25 @@
         "lib/net9.0/Microsoft.AspNetCore.OpenApi.xml",
         "microsoft.aspnetcore.openapi.9.0.1.nupkg.sha512",
         "microsoft.aspnetcore.openapi.nuspec"
+      ]
+    },
+    "Microsoft.Extensions.ObjectPool/9.0.3": {
+      "sha512": "4uPdnj9hLRrb3ZSeVEDtwIm9nNrrT9vAXYC9o1/yTW8lGOPwTyI2QlkcICwYEGM1LESGTFidcPMFACznUZKbIQ==",
+      "type": "package",
+      "path": "microsoft.extensions.objectpool/9.0.3",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Icon.png",
+        "THIRD-PARTY-NOTICES.TXT",
+        "lib/net462/Microsoft.Extensions.ObjectPool.dll",
+        "lib/net462/Microsoft.Extensions.ObjectPool.xml",
+        "lib/net9.0/Microsoft.Extensions.ObjectPool.dll",
+        "lib/net9.0/Microsoft.Extensions.ObjectPool.xml",
+        "lib/netstandard2.0/Microsoft.Extensions.ObjectPool.dll",
+        "lib/netstandard2.0/Microsoft.Extensions.ObjectPool.xml",
+        "microsoft.extensions.objectpool.9.0.3.nupkg.sha512",
+        "microsoft.extensions.objectpool.nuspec"
       ]
     },
     "Microsoft.OpenApi/1.6.17": {
@@ -275,6 +307,7 @@
   "projectFileDependencyGroups": {
     "net9.0": [
       "Microsoft.AspNetCore.OpenApi >= 9.0.1",
+      "Microsoft.Extensions.ObjectPool >= 9.0.3",
       "Newtonsoft.Json >= 13.0.3",
       "System.Data.SqlClient >= 4.9.0"
     ]
@@ -325,6 +358,10 @@
           "Microsoft.AspNetCore.OpenApi": {
             "target": "Package",
             "version": "[9.0.1, )"
+          },
+          "Microsoft.Extensions.ObjectPool": {
+            "target": "Package",
+            "version": "[9.0.3, )"
           },
           "Newtonsoft.Json": {
             "target": "Package",

@@ -1,30 +1,20 @@
 using System;
 using System.Collections.Generic;
+using Toolbox;
 
 namespace Database
 {
     /// <summary>
-    /// 核心数据库管理器，支持动态 ORM 表映射与数据库配置
+    /// 数据库核心管理器，支持动态 ORM 映射、配置、池化适配
     /// </summary>
     public class DatabaseCore
     {
-        /// <summary>
-        /// 当前数据库逻辑名称
-        /// </summary>
         private string _dbName;
-
-        /// <summary>
-        /// 表映射集合
-        /// </summary>
         private Dictionary<string, OrmMapping> _tableMappings;
-
-        /// <summary>
-        /// 数据库配置（连接信息等），调用 SetConfig 设置
-        /// </summary>
         private DBConfig _config;
 
         /// <summary>
-        /// 构造器，初始化数据库名和表映射
+        /// 构造器，创建数据库实例，绑定数据库名和表映射
         /// </summary>
         public DatabaseCore(string dbName, Dictionary<string, OrmMapping> tableMappings)
         {
@@ -33,42 +23,67 @@ namespace Database
         }
 
         /// <summary>
-        /// 动态注入数据库配置
+        /// 注入数据库配置
         /// </summary>
-        public void SetConfig(DBConfig config)
+        public void SetConfig(DBConfig config) => _config = config;
+
+        /// <summary>
+        /// 动态增加/覆盖逻辑表映射
+        /// </summary>
+        public void AddMapping(string logicalName, string realTable)
         {
-            _config = config;
+            _tableMappings[logicalName] = new OrmMapping
+            {
+                LogicalName = logicalName,
+                PhysicalTable = realTable
+            };
         }
 
         /// <summary>
-        /// 获取 ORM 映射配置
+        /// 获取 ORM 映射
         /// </summary>
         public OrmMapping GetOrmMapping(string logicalName)
         {
-            if (_tableMappings.ContainsKey(logicalName))
-                return _tableMappings[logicalName];
-            throw new Exception($"未找到逻辑表映射：{logicalName}");
+            if (_tableMappings.TryGetValue(logicalName, out var mapping))
+                return mapping;
+            throw new Exception($"未找到逻辑表映射: {logicalName}");
         }
 
         /// <summary>
-        /// 动态解析表名（支持分表等）
+        /// 动态解析表名（支持分表）
         /// </summary>
         public string ResolveTable(string logicalName, object contextData = null)
         {
-            var mapping = GetOrmMapping(logicalName);
-            return mapping.ResolveTable(contextData);
+            return GetOrmMapping(logicalName).ResolveTable(contextData);
         }
 
         /// <summary>
-        /// 获取当前数据库配置
+        /// 获取数据库逻辑名
+        /// </summary>
+        public string GetDatabaseName() => _dbName;
+
+        /// <summary>
+        /// 获取数据库配置
         /// </summary>
         public DBConfig GetConfig() => _config;
 
         /// <summary>
-        /// 获取数据库逻辑名称
+        /// 数据持久化（Insert 示例），未来可扩展为 Update/Delete
         /// </summary>
-        public string GetDatabaseName() => _dbName;
+        public void SaveJson(Jsonfier obj, DbContext context)
+        {
+            var sqlLizer = context.Config.UsePool ? SqlLizerPoolAdapter.Rent() : new SqlLizer(); // 池化适配
 
-        // 后续：SaveJson、Query、Update、Delete 接口预留
+            try
+            {
+                var sql = sqlLizer.BuildInsert(obj);
+                var adapter = context.Config.GetSqlAdapter();
+                adapter.Execute(sql, obj.Fields); // 参数化执行
+            }
+            finally
+            {
+                if (context.Config.UsePool) SqlLizerPoolAdapter.Return(sqlLizer);
+            }
+        }
     }
 }
