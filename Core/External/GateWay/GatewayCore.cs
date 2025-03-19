@@ -5,12 +5,12 @@ using Toolbox;
 
 namespace External.Gateway
 {
-    public class Gateway
+    public class GatewayCore
     {
         private readonly Requester _requester;
         private readonly string _baseUrl;
 
-        public Gateway(string baseUrl)
+        public GatewayCore(string baseUrl)
         {
             _requester = new Requester();
             _baseUrl = baseUrl;
