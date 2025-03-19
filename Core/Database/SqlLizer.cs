@@ -1,11 +1,11 @@
-using Microsoft.Extensions.ObjectPool;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.ObjectPool;
 
-namespace Database
+namespace Core.Database
 {
-    public class SqlLizer : IResettable
+    public class SqlLizer
     {
         public string BuildInsert(string tableName, Dictionary<string, object> fields)
         {

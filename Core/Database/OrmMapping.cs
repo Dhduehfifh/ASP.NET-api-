@@ -1,19 +1,20 @@
-using Microsoft.Extensions.ObjectPool;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
-namespace Database
+namespace Core.Database
 {
     public class OrmMapping
     {
-        public string LogicalName { get; set; }
-        public string PhysicalTableName { get; set; }
+        private static readonly Dictionary<Type, string> _tableMappings = new();
 
-        // 预留扩展：未来按条件动态分表
-        public string ResolveTable(object contextData = null)
+        public static void Register<T>(string tableName)
         {
-            return PhysicalTableName;
+            _tableMappings[typeof(T)] = tableName;
+        }
+
+        public static string GetTableName<T>()
+        {
+            return _tableMappings.TryGetValue(typeof(T), out var tableName) ? tableName : typeof(T).Name;
         }
     }
 }

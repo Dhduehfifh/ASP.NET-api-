@@ -1,22 +1,31 @@
+using System;
 using Microsoft.Extensions.ObjectPool;
 
-namespace Database
+namespace Core.Database
 {
-    public class StandardPolicy<T> : PooledObjectPolicy<T> where T : class, new()
-    {
-        public override T Create() => new T();
-
-        public override bool Return(T obj)
-        {
-            if (obj is IResettable resettable)
-                resettable.Reset(); // 自动重置
-            return true;
-        }
-    }
-
     public static class PoolFactory
     {
-        public static ObjectPool<T> CreatePool<T>(int maxSize = 200) where T : class, new()
-            => new DefaultObjectPool<T>(new StandardPolicy<T>(), maxSize);
+        /// 🌍 **泛型对象池工厂**
+        public static ObjectPool<T> CreatePool<T>(int maxSize) where T : class, new()
+        {
+            return new DefaultObjectPool<T>(new DefaultPooledObjectPolicy<T>(), maxSize);
+        }
+
+        /// 🌍 **专门为 `DbContext` 设定的对象池**
+        private static readonly ObjectPool<DbContext> _dbContextPoolInstance =
+            new DefaultObjectPool<DbContext>(new DbContextPolicy(), DefaultConfig.PoolSize);
+
+        public static DbContext RentDbContext() => _dbContextPoolInstance.Get();
+        public static void ReturnDbContext(DbContext dbContext) => _dbContextPoolInstance.Return(dbContext);
+    }
+
+    public class DbContextPolicy : PooledObjectPolicy<DbContext>
+    {
+        public override DbContext Create() => new DbContext();
+        public override bool Return(DbContext dbContext)
+        {
+            dbContext.Dispose();
+            return true;
+        }
     }
 }

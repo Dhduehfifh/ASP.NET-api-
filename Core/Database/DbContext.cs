@@ -1,31 +1,52 @@
-using Microsoft.Extensions.ObjectPool;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Data;
+using System.Data.SQLite;
 
-namespace Database
+namespace Core.Database
 {
-    public interface IResettable
+    public class DbContext
     {
-        void Reset(); // 归还池时自动重置
-    }
+        private readonly DatabaseCore _database;
 
-    public class DbContext : IResettable
-    {
-        public string TableName { get; set; }
-        public DBConfig Config { get; set; }
-
-        public void Reset()
+        public DbContext()
         {
-            TableName = null;
-            Config = null;
+            _database = new DatabaseCore();
+            _database.Connect();
         }
-    }
 
-    public static class DbContextPool
-    {
-        private static readonly ObjectPool<DbContext> _pool = PoolFactory.CreatePool<DbContext>(200);
-        public static DbContext Rent() => _pool.Get();
-        public static void Return(DbContext obj) => _pool.Return(obj);
+        public void Dispose()
+        {
+            _database.Close();
+        }
+
+        public List<T> Query<T>(string sql, Func<IDataReader, T> map)
+        {
+            var resultList = new List<T>();
+            var connection = _database.GetConnection();
+            if (connection == null) return resultList;
+
+            using (var command = new SQLiteCommand(sql, connection))
+            using (var reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    resultList.Add(map(reader));
+                }
+            }
+
+            return resultList;
+        }
+
+        public int Execute(string sql)
+        {
+            var connection = _database.GetConnection();
+            if (connection == null) return -1;
+
+            using (var command = new SQLiteCommand(sql, connection))
+            {
+                return command.ExecuteNonQuery();
+            }
+        }
     }
 }
