@@ -1,117 +1,138 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using Microsoft.Extensions.ObjectPool;
 
 namespace Toolbox
 {
-    /// <summery>
-    /// Json分块鱼对象化工具
-    /// </summery>
+    /// <summary>
+    /// Json 数据管理工具，支持增量更新（diff）、对象池化（减少 GC）、KV 嵌套 JSON
+    /// </summary>
     public class Jsonfier
     {
-        //临时分块存储
-        private List<ProtocolChunk> _chunks = new List<ProtocolChunk>();
+        private Dictionary<string, object> _data = new();   // 主数据存储
+        private Dictionary<string, object> _diff = new();   // 仅存增量数据
+        private DateTime _lastUpdate = DateTime.UtcNow;     // 记录最后更新时间
 
-        /// <summery>
-        /// 添加分块（用于接受场景）
-        /// </summery>
-        public void AddChunk(ProtocolChunk chunk)
+        /// <summary>
+        /// 设置数据（完整更新，同时存入 `diff`）
+        /// </summary>
+        public void Set(string key, object value)
         {
-            _chunks.Add(chunk);
-        }
-
-        /// <summery>
-        /// 判断分块是否接收完成
-        /// </summery>
-        public bool IsComplete => _chunks.Count > 0 && _chunks.Count == _chunks[0].TotalChunks;
-
-        /// <summery>
-        /// 分块重组为完整数据
-        /// </summery>
-        public byte[] Reassemble()
-        {
-            _chunks.Sort((a, b) => a.Index.CompareTo(b.Index)); //按顺序重排
-            List<byte> allData = new List<byte>();
-            foreach (var chunk in _chunks)
-                allData.AddRange(chunk.Data);
-            return allData.ToArray(); //返回合成数据 
+            _data[key] = value;
+            _diff[key] = value; // 记录到增量更新
         }
 
         /// <summary>
-        /// 将对象序列化为 JSON 字节数组
+        /// 获取数据
         /// </summary>
-        public byte[] Serialize(object obj)
+        public object Get(string key)
         {
-            var json = JsonSerializer.Serialize(obj, new JsonSerializerOptions
+            return _data.ContainsKey(key) ? _data[key] : null;
+        }
+
+        /// <summary>
+        /// 仅获取增量更新数据
+        /// </summary>
+        public Dictionary<string, object> GetDiff()
+        {
+            return _diff;
+        }
+
+        /// <summary>
+        /// 获取完整数据
+        /// </summary>
+        public Dictionary<string, object> GetFull()
+        {
+            return _data;
+        }
+
+        /// <summary>
+        /// 序列化完整数据（包含元数据）
+        /// </summary>
+        public string SerializeFull()
+        {
+            var json = JsonSerializer.Serialize(new { meta = new { version = "1.0", last_update = _lastUpdate }, data = _data },
+                new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, WriteIndented = true });
+
+            _diff.Clear(); // 发送后清空 diff
+            return json;
+        }
+
+        /// <summary>
+        /// 序列化增量数据
+        /// </summary>
+        public string SerializeDiff()
+        {
+            var json = JsonSerializer.Serialize(new { diff = _diff },
+                new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, WriteIndented = true });
+
+            _diff.Clear(); // 发送后清空 diff
+            return json;
+        }
+
+        /// <summary>
+        /// 反序列化完整数据
+        /// </summary>
+        public void Deserialize(string json)
+        {
+            var parsed = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
+            if (parsed.ContainsKey("data"))
             {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-            });
-            return Encoding.UTF8.GetBytes(json);
-        }
-
-        /// <summary>
-        /// 将 JSON 字节数组反序列化为对象
-        /// </summary>
-        public T Deserialize<T>(byte[] data)
-        {
-            var json = Encoding.UTF8.GetString(data);
-            return JsonSerializer.Deserialize<T>(json);
-        }
-
-        /// <summary>
-        /// 将对象序列化后按块大小分块
-        /// </summary>
-        public List<ProtocolChunk> Chunk(object obj, int chunkSize)
-        {
-            var data = Serialize(obj); // 序列化成字节
-            List<ProtocolChunk> chunks = new List<ProtocolChunk>();
-            int totalChunks = (int)Math.Ceiling((double)data.Length / chunkSize); // 总块数
-
-            for (int i = 0; i < totalChunks; i++)
-            {
-                int offset = i * chunkSize;
-                int size = Math.Min(chunkSize, data.Length - offset);
-                byte[] chunkData = new byte[size];
-                Array.Copy(data, offset, chunkData, 0, size);
-
-                chunks.Add(new ProtocolChunk
-                {
-                    Index = i,
-                    TotalChunks = totalChunks,
-                    Data = chunkData
-                });
+                _data = JsonSerializer.Deserialize<Dictionary<string, object>>(parsed["data"].ToString());
             }
-
-            return chunks;
-        }
-
-         /// <summary>
-        /// 将分块对象转为 JSON 方便发送
-        /// </summary>
-        public string ChunkToJson(ProtocolChunk chunk)
-        {
-            return JsonSerializer.Serialize(chunk);
+            if (parsed.ContainsKey("diff"))
+            {
+                _diff = JsonSerializer.Deserialize<Dictionary<string, object>>(parsed["diff"].ToString());
+            }
         }
 
         /// <summary>
-        /// 从 JSON 转回分块对象
+        /// 仅应用 `diff` 更新数据
         /// </summary>
-        public ProtocolChunk ChunkFromJson(string json)
+        public void ApplyDiff(string diffJson)
         {
-            return JsonSerializer.Deserialize<ProtocolChunk>(json);
+            var parsedDiff = JsonSerializer.Deserialize<Dictionary<string, object>>(diffJson);
+            if (parsedDiff.ContainsKey("diff"))
+            {
+                var diffData = JsonSerializer.Deserialize<Dictionary<string, object>>(parsedDiff["diff"].ToString());
+                foreach (var key in diffData.Keys)
+                {
+                    _data[key] = diffData[key];
+                }
+            }
         }
 
+        /// <summary>
+        /// 清空数据（用于池化复用）
+        /// </summary>
+        public void Reset()
+        {
+            _data.Clear();
+            _diff.Clear();
+        }
     }
 
-    /// <summery>
-    /// 分块协议格式，指出序号，总块数，数据
-    /// </summery>
-    public class ProtocolChunk
+    /// <summary>
+    /// Jsonfier 对象池（减少 new，优化性能）
+    /// </summary>
+    public static class JsonfierPool
     {
-        public int Index { get; set; }
-        public int TotalChunks { get; set; }
-        public byte[] Data { get; set; }
+        private static readonly ObjectPool<Jsonfier> _pool = new DefaultObjectPool<Jsonfier>(new JsonfierPolicy(), 100);
+
+        public static Jsonfier Rent() => _pool.Get();
+        public static void Return(Jsonfier jsonfier) => _pool.Return(jsonfier);
+    }
+
+    public class JsonfierPolicy : PooledObjectPolicy<Jsonfier>
+    {
+        public override Jsonfier Create() => new Jsonfier();
+
+        public override bool Return(Jsonfier jsonfier)
+        {
+            jsonfier.Reset();
+            return true;
+        }
     }
 }

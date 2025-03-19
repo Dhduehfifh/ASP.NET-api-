@@ -14,7 +14,7 @@ namespace External.Gateway
         public bool If_assign { get; set; } = false;
         public Jsonfier Req { get; private set; } = new Jsonfier();
         public Jsonfier Res { get; private set; } = new Jsonfier();
-        private readonly Queue<ProtocolChunk> _requestQueue = new();
+        private readonly Queue<string> _requestQueue = new(); // 存储 JSON 字符串请求
 
         // 请求类型枚举
         public enum Request_Type
@@ -42,21 +42,17 @@ namespace External.Gateway
         };
 
         /// <summary>
-        /// 发送 `Jsonfier` 数据，自动分块传输
+        /// 发送 `Jsonfier` 数据（完整或增量）
         /// </summary>
-        public async Task Fetch(Jsonfier req, string url, Request_Type type, int chunkSize = 1024)
+        public async Task Fetch(Jsonfier req, string url, Request_Type type, bool sendDiff = false)
         {
-            var chunks = req.Chunk(req, chunkSize);
-            foreach (var chunk in chunks)
-            {
-                _requestQueue.Enqueue(chunk); // 逐块加入队列
-            }
+            string jsonString = sendDiff ? req.SerializeDiff() : req.SerializeFull();
+            _requestQueue.Enqueue(jsonString); // 存入队列
 
             while (_requestQueue.Count > 0)
             {
-                var chunkData = _requestQueue.Dequeue();
-                var jsonString = req.ChunkToJson(chunkData);
-                var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
+                var requestData = _requestQueue.Dequeue();
+                var content = new StringContent(requestData, Encoding.UTF8, "application/json");
 
                 using var request = new HttpRequestMessage(HttpMethodsMap[type], url)
                 {
@@ -66,18 +62,25 @@ namespace External.Gateway
                 using var response = await _httpClient.SendAsync(request);
                 string responseString = await response.Content.ReadAsStringAsync();
 
-                // 添加到 `Jsonfier` 作为接收数据
-                var receivedChunk = req.ChunkFromJson(responseString);
-                Res.AddChunk(receivedChunk);
+                // 解析服务器返回的数据，并更新 `Jsonfier`
+                Res.Deserialize(responseString);
             }
         }
 
         /// <summary>
-        /// 获取完整数据（如果数据传输完毕）
+        /// 获取完整返回数据
         /// </summary>
-        public byte[] GetCompleteResponse()
+        public Dictionary<string, object> GetResponseData()
         {
-            return Res.IsComplete ? Res.Reassemble() : null;
+            return Res.GetFull();
+        }
+
+        /// <summary>
+        /// 获取服务器返回的增量数据
+        /// </summary>
+        public Dictionary<string, object> GetResponseDiff()
+        {
+            return Res.GetDiff();
         }
 
         /// <summary>
