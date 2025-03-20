@@ -1,122 +1,144 @@
 
 
+# 🚀  API Framework
+
+**是一个轻量级但企业级可扩展的 ASP.NET API 框架，支持 `API 组件化绑定`、`DSL 风格调用`、`前端适配` 和 `外部网关集成`。**
+
+
+## 🔹 **快速开始**
+### **1️⃣ 克隆仓库**
+```sh
+git clone https://github.com/Dhduehfifh/ASP.NET-api-.git
+cd ASP.NET-api-
+```
+2️⃣ 构建并运行
+```
+dotnet build
+dotnet run
+```
+3️⃣ 绑定 API
+```
+📌 示例代码（Program.cs）
+
+var apiRoutes = new ApiSet("/API")
+{
+    .BindApi(new ApiIndividual("/GetData", new Requester()))
+    .BindApi(new ApiIndividual("/PostData", new Requester()))
+    .BindDb(new DatabaseCore()
+        .WithConfig(new DBConfig()
+        {
+            ConnectionString = "Data Source=database.db;Version=3;",
+            Provider = "SQLite"
+        }))
+    .BindGateway(new GatewayCore()
+        .WithBaseUrl("https://api.external-service.com"))
+};
+```
+
+
 ⸻
 
+🔹 API 组件
 
-
-# AI Gateway API Framework
-
-一个灵活的模块化 AI 和数据网关框架，支持快速构建 AI 服务，包括外部 API 调用、数据库存储和前端数据适配。
-
-## ✨ 功能特色
-
-- 📡 **外部网关**：一键绑定 Azure、AWS、Colab、插件等外部 AI 模型。
-- 💾 **数据库核心**：快速、灵活的数据存储与检索（基于 SQL Server）。
-- 💻 **前端适配**：与 Figma UI 自动对接，快速生成前端展示。
-- 🔌 **API 路由管理**：简洁、可扩展的 API 管理体系。
-
----
-
-## 🚀 快速上手示例
-
-```csharp
-using Modules.Api_session;
-using Modules.Database;
-using External;
-using Modules.FrontService;
-
-class Program
+🟢 API 集合（ApiSet.cs）
+	•	负责 管理 API 逻辑
+	•	可绑定 API 个体、数据库、外部 API 网关
+	•	支持 DSL 绑定
+```
+public class ApiSet
 {
-    static void Main(string[] args)
-    {
-        var api = new Api_session();
-
-        // 绑定外部网关
-        var AI1 = new ExternalGateway("http://example.com/api");
-        api.BindGateway(AI1);
-
-        // 绑定数据库和前端
-        api.BindDatabase(new DatabaseCore("Server=.;Database=YourDB;Trusted_Connection=True;"));
-        api.BindFront(new FrontServiceCore());
-
-        // 注册 API 路由
-        api.BindRouter("home", new Api_individual(api, new RequestJsonContainer("{ \"prompt\": \"Home Page\" }"), "home.html"));
-        api.BindRouter("about", new Api_individual(api, new RequestJsonContainer("{ \"prompt\": \"About Page\" }"), "about.html"));
-
-        // 调用 API 路由
-        api.CallRoute("home");
-        api.CallRoute("about");
-
-        // 测试模式 (可选)
-        api.Test();
-    }
+    public ApiSet BindApi(ApiIndividual api) { }
+    public ApiSet BindDb(DatabaseCore database) { }
+    public ApiSet BindGateway(GatewayCore gateway) { }
+}
+```
+🟢 API 个体（ApiIndividual.cs）
+	•	负责 单个 API 的请求/响应
+	•	可被 ApiSet 绑定
+```
+public class ApiIndividual
+{
+    public string GetPath() { }
+    public string Execute(string requestData) { }
 }
 ```
 
 
+⸻
+
+🔹 数据库管理
+
+📌 配置 数据库
+```
+var db = new DatabaseCore()
+    .WithConfig(new DBConfig()
+    {
+        ConnectionString = "Data Source=database.db;Version=3;",
+        Provider = "SQLite"
+    });
+
+```
 
 ⸻
 
-📦 文件结构
+🔹 前端适配
 
-文件名	描述
-ExternalGateway.cs	外部 AI 服务请求（如 Azure、AWS）。
-Api_combine.cs	API 会话与路由管理核心。
-Database.cs	SQL Server 数据管理模块。
-FrontService.cs	Figma 前端组件管理模块。
+📌 绑定 前端 UI 路由
+```
+var staticRoutes = new StaticRoute()
+    .BindUI("/ui/vue", "vue")
+    .BindStatic("/static/vue-app.js", "vue-app");
+```
+📌 前端 HTML 页面
+```
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Vue UI</title>
+    <script src="/static/vue-app.js"></script>
+</head>
+<body>
+    <div id="app"></div>
+</body>
+</html>
 
-
+```
 
 ⸻
 
-📡 外部网关示例
-```csharp
-var gateway = new ExternalGateway("http://example.com/api");
-gateway.Test(); // 获取并标准化外部 JSON 返回
+🔹 文件路由
+
+📌 绑定 文件 API
+```
+var fileRoutes = new FileRoute()
+    .BindFile("/files/example.pdf", "example.pdf");
+```
+📌 访问 文件 API
+```
+GET /files/example.pdf
 ```
 
 
 ⸻
 
-💾 数据库使用示例
-```
-var db = new DatabaseCore("Server=.;Database=YourDB;Trusted_Connection=True;");
-db.AddData("logs", new DatabaseItem("{ \"action\": \"Test run\" }"));
-var data = db.GetData("logs");
-```
+🔹 外部 API 网关
 
-
-⸻
-
-💻 Figma 前端适配示例
+📌 配置 API Gateway
 ```
-var front = new FrontServiceCore();
-var page = new FigmaPage { Id = "home", Type = "page", Children = new List<FigmaComponent>() };
-front.Contents["home"] = page;
+var gateway = new GatewayCore()
+    .WithBaseUrl("https://api.external-service.com");
+```
+📌 Requester 处理 API 请求
+```
+var requester = new Requester()
+    .WithBaseUrl("https://api.external-service.com");
+
 ```
 
 
-⸻
 
-📞 联系方式（仅供展示，禁止删除或篡改）
+📌 许可证
 
-名称	联系方式
-持有者	不可删除/编辑
-中国电话	+86 18202402403
-加拿大电话	+1 3658833393
-
-
-
-⸻
-
-📷 示例图片
-
-
-⸻
-
-📜 授权协议
-
-MIT License
-
----
+本项目基于 MIT 许可证，允许自由使用、修改和分发。
 
