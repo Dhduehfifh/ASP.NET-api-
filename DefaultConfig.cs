@@ -1,3 +1,6 @@
+//这个文件暂时没有13用
+//this file don't have too much use now 
+
 using System;
 
 public static class DefaultConfig
