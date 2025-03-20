@@ -1,29 +1,43 @@
 using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Toolbox;
 
 namespace External.Gateway
 {
     public class GatewayCore
     {
-        private readonly Requester _requester;
-        private readonly string _baseUrl;
+        private string? _baseUrl; // ❌ 默认不设值，强制用户赋值
 
-        public GatewayCore(string baseUrl)
+        /// <summary>
+        /// 🌍 设定 API 基础 URL（支持 `.xxx.xxx` 方式赋值）
+        /// </summary>
+        public GatewayCore WithBaseUrl(string baseUrl)
         {
-            _requester = new Requester();
             _baseUrl = baseUrl;
+            return this;
         }
 
         /// <summary>
-        /// 🌍 发送 JSON 请求
+        /// 🌍 获取当前 URL（如果未设置 URL，则报错）
         /// </summary>
-        public async Task<Jsonfier> SendRequest(string endpoint, Jsonfier payload, Requester.Request_Type method)
+        public string GetBaseUrl()
         {
-            string fullUrl = $"{_baseUrl}{endpoint}";
-            await _requester.Fetch(payload, fullUrl, method);
-            return _requester.Res; // 返回响应
+            if (string.IsNullOrEmpty(_baseUrl))
+            {
+                throw new InvalidOperationException($"❌ [GatewayCore] 未设置 `BaseUrl`，请调用 `WithBaseUrl()` 进行赋值！");
+            }
+            return _baseUrl;
+        }
+
+        public void PrintInfo()
+        {
+            Console.WriteLine($"✅ Gateway URL: {GetBaseUrl()}");
+        }
+
+        /// <summary>
+        /// 🌍 释放资源（归还对象池）
+        /// </summary>
+        public void Reset()
+        {
+            _baseUrl = null;
         }
     }
 }
